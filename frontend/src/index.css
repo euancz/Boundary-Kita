@@ -1,0 +1,93 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f6fa;
+  color: #1e293b;
+}
+
+.tracking-page {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.tracking-header {
+  margin-bottom: 24px;
+}
+
+.tracking-header h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.tracking-header p {
+  color: #64748b;
+}
+
+.tracking-info {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px #0000000d;
+}
+
+.tracking-info h3 {
+  margin-top: 0;
+  color: #1565c0;
+}
+
+.tracking-info p {
+  margin: 8px 0;
+}
+
+.tracking-map {
+  width: 100%;
+  height: 550px;
+  border-radius: 12px;
+  z-index: 0;
+}
+
+.error {
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .tracking-page {
+    padding: 12px;
+  }
+
+  .tracking-header h1 {
+    font-size: 22px;
+  }
+
+  .tracking-map {
+    height: 450px;
+  }
+}
+.tracking-page {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: clamp(16px, 3vw, 40px);
+}
+
+.tracking-map {
+  width: 100%;
+  height: clamp(400px, 65vh, 850px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .tracking-map {
+    height: 55dvh;
+    min-height: 350px;
+  }
+}
