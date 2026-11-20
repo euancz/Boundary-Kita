@@ -1,58 +1,54 @@
-
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import LoginLayout from "../components/LoginLayout";
+import { api } from "../api";
+import { useAction } from "../hooks";
 
-export default function Login() {
-  const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+export default function Login({ onLogin }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const action = useAction();
 
-  function handleLogin(e) {
-    e.preventDefault();
+  function handleLogin(event) {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const username = fields.get("username").trim();
+    const password = fields.get("password");
+    if (!username || !password) return;
 
-    if (!username.trim() || !password) {
-      return;
-    }
-
-    // UI demonstration only.
-    // Django authentication will be added later.
-    navigate("/dashboard");
+    action.run(async () => {
+      onLogin(await api("session/login/", { method: "POST", body: { username, password } }));
+    });
   }
 
   return (
-    <div className="login-wrapper">
-      <div className="storyboard-page login-card">
-        <header className="storyboard-header">
-          BOUNDARY-KITA
-        </header>
-
-        <form className="login-form" onSubmit={handleLogin}>
-          <div className="jeepney-logo">JEEP</div>
-
-          <h3>Operator Login</h3>
-
-          <input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-
-          <button className="btn btn-navy" type="submit">
-            LOG IN
-          </button>
-
-          <a href="#forgot-password">Forgot password?</a>
-        </form>
+    <LoginLayout>
+      <div className="login-heading">
+        <h1>Operator sign-in</h1>
+        <p>Use your operator account to access the fleet dashboard.</p>
       </div>
-    </div>
+      <form className="login-form" onSubmit={handleLogin}>
+        <div className="form-field">
+          <label htmlFor="username">Username</label>
+          <input id="username" name="username" autoComplete="username"
+            autoCapitalize="none" spellCheck={false} required />
+        </div>
+        <div className="form-field">
+          <label htmlFor="password">Password</label>
+          <div className="password-field">
+            <input id="password" name="password" type={showPassword ? "text" : "password"}
+              autoComplete="current-password" required />
+            <button type="button" className="password-toggle" aria-controls="password"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((visible) => !visible)}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+        {action.error && <p className="operation-error" role="alert">{action.error}</p>}
+        <button className="btn btn-navy login-submit" type="submit" disabled={action.busy}>
+          {action.busy ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+    </LoginLayout>
   );
 }

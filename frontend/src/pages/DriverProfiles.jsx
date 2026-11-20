@@ -1,51 +1,54 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { UserRound } from "lucide-react";
 import PageLayout from "../components/PageLayout";
+import RecordsFeedback from "../components/RecordsFeedback";
+import { api } from "../api";
+import { useAction, useResource } from "../hooks";
 
 export default function DriverProfiles() {
   const [search, setSearch] = useState("");
-
-  const drivers = [
-    { id: 1, name: "Juan Dela Cruz", license: "N01-23-456789", jeepney: "001" },
-    { id: 2, name: "Pedro Santos", license: "N01-23-456790", jeepney: "002" },
-    { id: 3, name: "Mario Reyes", license: "N01-23-456791", jeepney: "003" },
-    { id: 4, name: "Ramon Cruz", license: "N01-23-456792", jeepney: "Unassigned" },
-  ];
-
-  const filtered = drivers.filter((driver) =>
-    driver.name.toLowerCase().includes(search.toLowerCase())
+  const drivers = useResource("drivers/");
+  const action = useAction();
+  const query = search.trim().toLowerCase();
+  const filtered = (drivers.data || []).filter((driver) =>
+    [driver.name, driver.license, driver.unit_no].some((value) => value?.toLowerCase().includes(query))
   );
+
+  function archive(driver) {
+    if (!window.confirm("Archive " + driver.name + "? Existing records will be kept.")) return;
+    action.run(async () => {
+      await api("drivers/" + driver.id + "/", { method: "DELETE" });
+      drivers.reload();
+    }, "Driver archived.");
+  }
 
   return (
     <PageLayout title="Driver Profiles">
       <div className="toolbar">
-        <input
-          placeholder="Search driver..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <Link to="/drivers/add" className="btn btn-yellow">
-          + Add
-        </Link>
+        <input type="search" placeholder="Search drivers" aria-label="Search drivers"
+          value={search} onChange={(event) => setSearch(event.target.value)} />
+        <Link to="/drivers/add" className="btn btn-yellow">+ Add Driver</Link>
       </div>
-
+      <RecordsFeedback resources={[drivers]} action={action} />
+      {drivers.data && filtered.length === 0 && <p className="empty-state">{query ? "No matching drivers." : "No drivers registered."}</p>}
       {filtered.map((driver) => (
-        <div className="record-card" key={driver.id}>
-          <div className="avatar">👤</div>
+        <article className="record-card management-record" key={driver.id}>
+          <div className="avatar">
+            {driver.photo_url ? <img src={driver.photo_url} alt="" /> : <UserRound aria-hidden="true" />}
+          </div>
           <div>
             <strong>{driver.name}</strong>
-            <small>
-              Lic: {driver.license} | Jeep: {driver.jeepney}
-            </small>
+            <small>License {driver.license} · Expires {driver.license_expiry}</small>
+            <small>{driver.unit_no ? "Unit " + driver.unit_no : "Unassigned"} · {driver.contact}</small>
+            <small>{driver.address}</small>
           </div>
-        </div>
+          <div className="record-actions">
+            <Link className="btn btn-gray" to={"/drivers/" + driver.id + "/edit"}>Edit</Link>
+            <button className="btn btn-red" disabled={action.busy} onClick={() => archive(driver)}>Archive</button>
+          </div>
+        </article>
       ))}
-
-      <p className="page-note">
-        Tap a driver to view, edit, or remove.
-      </p>
     </PageLayout>
   );
 }

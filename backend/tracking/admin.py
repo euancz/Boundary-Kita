@@ -1,13 +1,16 @@
 from django.contrib import admin
-from .models import Jeepney, GPSLog
+from .models import BoundaryRecord, BorrowRequest, Driver, Jeepney, GPSLog, Route
+
+admin.site.register([BoundaryRecord, BorrowRequest, Driver, Route])
 
 @admin.register(Jeepney)
 class JeepneyAdmin(admin.ModelAdmin):
     list_display = (
         'unit_no',
         'plate_no',
-        'model',
-        'status'
+        'route',
+        'status',
+        'archived',
     )
     search_fields = ('unit_no', 'plate_no')
 

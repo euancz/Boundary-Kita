@@ -1,19 +1,30 @@
 
+import json
+import math
 import secrets
 
 from django.conf import settings
 from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from .models import Jeepney, GPSLog
 
-import json
-
-
-# GET: Retrieve the latest GPS coordinates
+@require_GET
+@never_cache
 def latest_location(request):
-    gps = GPSLog.objects.order_by(
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Sign in to continue."}, status=401)
+    logs = GPSLog.objects.select_related("jeepney").filter(jeepney__archived=False)
+    unit_id = request.GET.get("jeepney_id")
+    if unit_id is not None:
+        try:
+            unit_id = parse_jeepney_id(unit_id)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Invalid jeepney ID"}, status=400)
+        logs = logs.filter(jeepney_id=unit_id)
+    gps = logs.order_by(
         "-recorded_at", "-id"
     ).first()
 
@@ -31,6 +42,15 @@ def latest_location(request):
     })
 
 
+def parse_jeepney_id(value):
+    if type(value) not in (int, str):
+        raise ValueError
+    identifier = int(value)
+    if not 1 <= identifier <= 2**63 - 1:
+        raise ValueError
+    return identifier
+
+
 # POST: Receive coordinates from ESP32/Postman
 @csrf_exempt
 @require_POST
@@ -45,8 +65,8 @@ def receive_location(request):
     if (
         not expected_token
         or not secrets.compare_digest(
-            expected_token,
-            provided_token
+            expected_token.encode(),
+            provided_token.encode()
         )
     ):
         return JsonResponse(
@@ -71,12 +91,12 @@ def receive_location(request):
 
     # 3. Validate incoming GPS values
     try:
-        jeepney_id = int(data["jeepney_id"])
+        jeepney_id = parse_jeepney_id(data["jeepney_id"])
+        if any(isinstance(data.get(key), bool) for key in ("latitude", "longitude", "speed")):
+            raise ValueError
         latitude = float(data["latitude"])
         longitude = float(data["longitude"])
         speed = float(data.get("speed", 0))
-
-        import math
 
         if not all(map(math.isfinite, [
             latitude, longitude, speed
@@ -100,7 +120,7 @@ def receive_location(request):
 
     # 4. Find the registered jeepney
     try:
-        jeepney = Jeepney.objects.get(id=jeepney_id)
+        jeepney = Jeepney.objects.get(id=jeepney_id, archived=False)
     except Jeepney.DoesNotExist:
         return JsonResponse(
             {"error": "Jeepney not found"},

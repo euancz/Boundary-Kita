@@ -1,0 +1,94 @@
+﻿.login-screen {
+  min-height: 100dvh;
+  display: grid;
+  align-items: center;
+  padding: clamp(24px, 5vw, 72px);
+  background: #edf2f8;
+}
+
+.login-frame {
+  display: grid;
+  grid-template-columns: minmax(325px, 5fr) minmax(0, 6fr);
+  width: min(100%, 1090px);
+  min-height: 540px;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid #d7e2ee;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 40px #112b4910;
+}
+
+.login-panel {
+  display: grid;
+  align-content: center;
+  gap: 32px;
+  padding: clamp(24px, 4vw, 60px);
+}
+
+.login-content h1 {
+  margin: 0;
+  color: var(--navy-dark);
+  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+  font-weight: 690;
+  line-height: 1.13;
+  letter-spacing: -.045em;
+}
+
+.login-heading p { margin: 9px 0 0; color: var(--muted); font-size: .92rem; line-height: 1.55; }
+.login-form { display: grid; gap: 15px; margin-top: 24px; }
+.login-form .form-field input { min-height: 46px; }
+.login-form .operation-error { margin: 0; }
+.password-field { position: relative; }
+.password-field input { padding-inline-end: 48px; }
+.password-toggle {
+  position: absolute;
+  inset: 3px 3px 3px auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+}
+.password-toggle:hover { background: #e8eef6; color: var(--navy-dark); }
+
+.login-form .login-submit {
+  min-height: 46px;
+  margin-top: 3px;
+  font-size: .92rem;
+}
+
+.login-artwork {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(22px, 4.5vw, 62px);
+  border-left: 1px solid #d7e2ee;
+  background: #e4edf8;
+  color: var(--navy-dark);
+}
+
+.login-artwork img { display: block; width: 100%; height: auto; }
+
+.login-artwork figcaption {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #b8cbe1;
+  font-size: .79rem;
+  font-weight: 620;
+}
+
+@media (max-width: 690px) {
+  .login-screen { padding: 15px; }
+  .login-frame { grid-template-columns: 1fr; min-height: auto; max-width: 440px; }
+  .login-panel { padding: 28px 20px 25px; gap: 26px; }
+  .login-artwork { padding: 14px 20px; border-left: 0; border-top: 1px solid #d7e2ee; }
+  .login-artwork img { max-width: 350px; margin-inline: auto; }
+  .login-artwork figcaption { margin-top: 5px; padding-top: 8px; }
+}

@@ -1,75 +1,97 @@
-
 import { useState } from "react";
 import PageLayout from "../components/PageLayout";
+import RecordsFeedback from "../components/RecordsFeedback";
+import { Field, JeepneySelect } from "../components/FleetOptions";
+import { api, pesos } from "../api";
+import { useAction, useResource } from "../hooks";
 
 export default function JeepneyRoutes() {
-  const [jeepney, setJeepney] = useState("");
-  const [route, setRoute] = useState("");
+  const routes = useResource("routes/");
+  const units = useResource("jeepneys/");
+  const action = useAction();
+  const [editing, setEditing] = useState(null);
 
-  const routes = [
-    { id: 1, name: "Tarlac City - Capas", fare: 25, distance: 18 },
-    { id: 2, name: "Tarlac City - Concepcion", fare: 30, distance: 22 },
-    { id: 3, name: "Tarlac City - Paniqui", fare: 35, distance: 28 },
-  ];
+  function save(event) {
+    event.preventDefault();
+    const body = Object.fromEntries(new FormData(event.currentTarget));
+    action.run(async () => {
+      await api(editing.id ? "routes/" + editing.id + "/" : "routes/", {
+        method: editing.id ? "PATCH" : "POST", body,
+      });
+      setEditing(null);
+      routes.reload();
+      units.reload();
+    }, "Route saved.");
+  }
 
-  function assignRoute(e) {
-    e.preventDefault();
-    alert("Route assignment will be saved through Django later.");
+  function assign(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const body = new FormData(form);
+    action.run(async () => {
+      await api("jeepneys/" + body.get("jeepney") + "/", {
+        method: "PATCH", body: { route: Number(body.get("route")) },
+      });
+      form.reset();
+      units.reload();
+    }, "Route assigned.");
+  }
+
+  function remove(route) {
+    if (!window.confirm("Remove route " + route.name + "?")) return;
+    action.run(async () => {
+      await api("routes/" + route.id + "/", { method: "DELETE" });
+      setEditing(null);
+      routes.reload();
+    }, "Route removed.");
   }
 
   return (
     <PageLayout title="Jeepney Routes">
       <div className="toolbar toolbar-end">
-        <button
-          className="btn btn-yellow"
-          onClick={() => alert("Add Route form coming next.")}
-        >
-          + Add Route
-        </button>
+        <button className="btn btn-yellow" disabled={action.busy} onClick={() => setEditing({})}>+ Add Route</button>
       </div>
-
-      {routes.map((item) => (
-        <div className="record-card" key={item.id}>
-          <div>
-            <strong>{item.name}</strong>
-            <small>
-              Fare: ₱{item.fare} | {item.distance} km
-            </small>
+      <RecordsFeedback action={action} resources={[routes, units]} />
+      {editing && (
+        <form className="storyboard-form management-form" key={editing.id || "new"} onSubmit={save}>
+          <h3>{editing.id ? "Edit Route" : "Add Route"}</h3>
+          <Field label="Route name"><input name="name" defaultValue={editing.name} maxLength={120} required /></Field>
+          <Field label="Fare (PHP)"><input name="fare" type="number" min="0" max="999999.99" step="0.01" defaultValue={editing.fare} required /></Field>
+          <Field label="Distance (km)"><input name="distance" type="number" min="0.01" max="999999.99" step="0.01" defaultValue={editing.distance} required /></Field>
+          <div className="form-actions">
+            <button className="btn btn-navy" disabled={action.busy}>Save route</button>
+            <button className="btn btn-gray" type="button" onClick={() => setEditing(null)} disabled={action.busy}>Cancel</button>
           </div>
-        </div>
+        </form>
+      )}
+      {routes.data?.length === 0 && <p className="empty-state">No routes registered.</p>}
+      {routes.data?.map((route) => (
+        <article className="record-card management-record" key={route.id}>
+          <div>
+            <strong>{route.name}</strong>
+            <small>Fare {pesos(route.fare)} · {Number(route.distance)} km</small>
+            <small>{units.data?.filter((unit) => unit.route === route.id)
+              .map((unit) => "Unit " + unit.unit_no).join(", ") || "No assigned jeepneys"}</small>
+          </div>
+          <div className="record-actions">
+            <button className="btn btn-gray" disabled={action.busy} onClick={() => setEditing(route)}>Edit</button>
+            <button className="btn btn-red" disabled={action.busy} onClick={() => remove(route)}>Remove</button>
+          </div>
+        </article>
       ))}
-
-      <form className="storyboard-form assignment-form" onSubmit={assignRoute}>
-        <h3>Assign route to a jeepney</h3>
-
-        <select
-          value={jeepney}
-          onChange={(e) => setJeepney(e.target.value)}
-          required
-        >
-          <option value="">Select jeepney</option>
-          <option value="1">Unit 001</option>
-          <option value="2">Unit 002</option>
-          <option value="3">Unit 003</option>
-        </select>
-
-        <select
-          value={route}
-          onChange={(e) => setRoute(e.target.value)}
-          required
-        >
-          <option value="">Select route</option>
-          {routes.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-
-        <button type="submit" className="btn btn-navy">
-          ASSIGN
-        </button>
-      </form>
+      {units.data?.length > 0 && routes.data?.length > 0 && (
+        <form className="storyboard-form assignment-form" onSubmit={assign}>
+          <h3>Assign route to a jeepney</h3>
+          <JeepneySelect units={units.data} required />
+          <Field label="Route">
+            <select name="route" defaultValue="" required>
+              <option value="">Select a route</option>
+              {routes.data.map((route) => <option key={route.id} value={route.id}>{route.name}</option>)}
+            </select>
+          </Field>
+          <button className="btn btn-navy" disabled={action.busy}>Assign route</button>
+        </form>
+      )}
     </PageLayout>
   );
 }
